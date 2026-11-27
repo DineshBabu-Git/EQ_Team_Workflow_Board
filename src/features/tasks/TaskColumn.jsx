@@ -1,9 +1,9 @@
-// Props: status (column name), tasks (already filtered for this column), onMove, onDelete.
+// Props: status (column name), tasks (already filtered for this column), onMove, onEdit, onDelete.
 // A <section> labelled by its heading, so screen readers can jump between the columns.
 import { useId } from 'react'
 import TaskCard from './TaskCard'
 
-function TaskColumn({ status, tasks, onMove, onDelete }) {
+function TaskColumn({ status, tasks, onMove, onEdit, onDelete }) {
   const headingId = useId()
 
   return (
@@ -24,7 +24,7 @@ function TaskColumn({ status, tasks, onMove, onDelete }) {
           {tasks.map(function (task) {
             return (
               <li key={task.id}>
-                <TaskCard task={task} onMove={onMove} onDelete={onDelete} />
+                <TaskCard task={task} onMove={onMove} onEdit={onEdit} onDelete={onDelete} />
               </li>
             )
           })}

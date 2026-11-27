@@ -1,14 +1,18 @@
-// Props: task (one task object), onMove(taskId, newStatus), onDelete(task).
+// Props: task (one task object), onMove(taskId, newStatus), onEdit(task), onDelete(task).
 // Purely presentational: it shows the task and reports clicks to its parent,
 // and it never touches storage or context itself.
-import { Badge, Card, CardBody, CardFooter, CardHeader, Button, Select } from '../../components/ui'
+import { Badge, Button, Card, CardBody, CardFooter, CardHeader, Select } from '../../components/ui'
 import { PRIORITY_COLORS, STATUSES } from '../../utils/constants'
 import { getRelativeTime } from '../../utils/relativeTime'
 import { getStatusSelectId } from './taskDomIds'
 
-function TaskCard({ task, onMove, onDelete }) {
+function TaskCard({ task, onMove, onEdit, onDelete }) {
   function handleStatusChange(event) {
     onMove(task.id, event.target.value)
+  }
+
+  function handleEditClick() {
+    onEdit(task)
   }
 
   function handleDeleteClick() {
@@ -47,19 +51,26 @@ function TaskCard({ task, onMove, onDelete }) {
         </p>
       </CardBody>
 
-      <CardFooter className="flex items-end justify-between gap-2">
+      <CardFooter className="flex flex-wrap items-end justify-between gap-2">
         {/* The label is only for screen readers; sighted users see the selected status. */}
-        <Select
-          id={getStatusSelectId(task.id)}
-          label={`Status of ${task.title}`}
-          hideLabel
-          options={STATUSES}
-          value={task.status}
-          onChange={handleStatusChange}
-        />
-        <Button variant="destructive" size="sm" onClick={handleDeleteClick} aria-label={`Delete ${task.title}`}>
-          Delete
-        </Button>
+        <div className="min-w-32 flex-1">
+          <Select
+            id={getStatusSelectId(task.id)}
+            label={`Status of ${task.title}`}
+            hideLabel
+            options={STATUSES}
+            value={task.status}
+            onChange={handleStatusChange}
+          />
+        </div>
+        <div className="flex gap-2">
+          <Button variant="secondary" size="sm" onClick={handleEditClick} aria-label={`Edit ${task.title}`}>
+            Edit
+          </Button>
+          <Button variant="destructive" size="sm" onClick={handleDeleteClick} aria-label={`Delete ${task.title}`}>
+            Delete
+          </Button>
+        </div>
       </CardFooter>
     </Card>
   )
