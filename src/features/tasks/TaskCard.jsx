@@ -5,6 +5,7 @@ import { Badge, Button, Card, CardBody, CardFooter, CardHeader, Select } from '.
 import { PRIORITY_COLORS, STATUSES } from '../../utils/constants'
 import { getRelativeTime } from '../../utils/relativeTime'
 import { getStatusSelectId } from './taskDomIds'
+import { memo } from 'react'
 
 function TaskCard({ task, onMove, onEdit, onDelete }) {
   function handleStatusChange(event) {
@@ -76,4 +77,7 @@ function TaskCard({ task, onMove, onEdit, onDelete }) {
   )
 }
 
-export default TaskCard
+// memo makes React skip this card when its props are the same as last time. That only works
+// because the parent passes stable props: the task object keeps its identity until it
+// actually changes, and the three callbacks come from useCallback.
+export default memo(TaskCard)
