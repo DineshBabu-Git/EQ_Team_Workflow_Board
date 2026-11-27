@@ -10,10 +10,23 @@ import StorageAlert from './StorageAlert'
 import TaskColumn from './TaskColumn'
 import TaskModal from './TaskModal'
 import { getStatusSelectId } from './taskDomIds'
+import useTaskFilters from '../../hooks/useTaskFilters'
+import { filterAndSortTasks } from '../../utils/filterAndSort'
+import TaskFilters from './TaskFilters'
 
 function TaskBoard() {
   const { tasks, storageProblem, addTask, updateTask, moveTask, deleteTask, dismissStorageProblem } = useTasks()
   const { showToast } = useToast()
+  const {
+    filters,
+    hasActiveFilters,
+    toggleStatus,
+    setPriority,
+    setSearchText,
+    setSortField,
+    setSortDirection,
+    clearFilters,
+  } = useTaskFilters()
 
   // The form dialog: closed, open to create (task is null), or open to edit (task is set).
   const [formDialog, setFormDialog] = useState({ isOpen: false, task: null })
@@ -24,11 +37,19 @@ function TaskBoard() {
   // Remembers which task's select should get focus after the next render.
   const taskIdToFocusRef = useRef(null)
 
+  // Filter and sort first, then split into columns. Both steps only rerun when their input changes.
+  const visibleTasks = useMemo(
+    function () {
+      return filterAndSortTasks(tasks, filters)
+    },
+    [tasks, filters],
+  )
+
   const tasksByStatus = useMemo(
     function () {
-      return groupTasksByStatus(tasks)
+      return groupTasksByStatus(visibleTasks)
     },
-    [tasks],
+    [visibleTasks],
   )
 
   // A task that changes column makes its card unmount in one column and mount in another,
@@ -110,10 +131,28 @@ function TaskBoard() {
         </div>
       )}
 
-      {/* Stage 7 puts the filters and sorting in this row too. */}
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="text-lg font-semibold text-slate-900">Tasks</h2>
         <Button onClick={handleNewTaskClick}>New task</Button>
       </div>
+
+      <div className="mb-3">
+        <TaskFilters
+          filters={filters}
+          hasActiveFilters={hasActiveFilters}
+          onToggleStatus={toggleStatus}
+          onPriorityChange={setPriority}
+          onSearchChange={setSearchText}
+          onSortFieldChange={setSortField}
+          onSortDirectionChange={setSortDirection}
+          onClear={clearFilters}
+        />
+      </div>
+
+      {/* Polite live region: screen reader users hear how many tasks match after filtering. */}
+      <p aria-live="polite" className="mb-3 text-sm text-slate-600">
+        Showing {visibleTasks.length} of {tasks.length} tasks
+      </p>
 
       <div className="grid gap-4 md:grid-cols-3">
         {STATUSES.map(function (status) {
