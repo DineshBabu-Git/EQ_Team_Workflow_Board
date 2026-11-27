@@ -1,18 +1,17 @@
-// The container for the board. It reads tasks from context, groups them into columns,
-// and owns the create/edit dialog and the "delete this task?" confirmation.
-// TaskColumn and TaskCard only display things.
+// The container for the board. It reads tasks and filters, works out what is visible,
+// and owns the create/edit dialog and the delete confirmation. BoardBody, TaskColumn and
+// TaskCard only display things.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, ConfirmModal, useToast } from '../../components/ui'
-import useTasks from '../../hooks/useTasks'
-import { STATUSES } from '../../utils/constants'
-import { groupTasksByStatus } from '../../utils/groupTasks'
-import StorageAlert from './StorageAlert'
-import TaskColumn from './TaskColumn'
-import TaskModal from './TaskModal'
-import { getStatusSelectId } from './taskDomIds'
 import useTaskFilters from '../../hooks/useTaskFilters'
+import useTasks from '../../hooks/useTasks'
 import { filterAndSortTasks } from '../../utils/filterAndSort'
+import { groupTasksByStatus } from '../../utils/groupTasks'
+import BoardBody from './BoardBody'
+import StorageAlert from './StorageAlert'
 import TaskFilters from './TaskFilters'
+import TaskModal from './TaskModal'
+import { SEARCH_INPUT_ID, getStatusSelectId } from './taskDomIds'
 
 function TaskBoard() {
   const { tasks, storageProblem, addTask, updateTask, moveTask, deleteTask, dismissStorageProblem } = useTasks()
@@ -33,6 +32,9 @@ function TaskBoard() {
 
   // The task waiting for delete confirmation, or null when no confirm is open.
   const [taskToDelete, setTaskToDelete] = useState(null)
+
+  // Goes up by one every time filters are cleared. TaskFilters watches it (see there).
+  const [clearSignal, setClearSignal] = useState(0)
 
   // Remembers which task's select should get focus after the next render.
   const taskIdToFocusRef = useRef(null)
@@ -94,6 +96,30 @@ function TaskBoard() {
     setFormDialog({ isOpen: false, task: null })
   }
 
+  // Both Clear buttons (the filter bar and the empty state) come through here.
+  function handleClearFilters() {
+    // The search box stays on the page, but the Clear button may not, so move focus first.
+    const searchBox = document.getElementById(SEARCH_INPUT_ID)
+    if (searchBox) {
+      searchBox.focus()
+    }
+    setClearSignal(function (current) {
+      return current + 1
+    })
+    clearFilters()
+  }
+
+  // A saved task that does not match the current filters would silently vanish from the
+  // board, so the toast says so. The same matching code as the board is reused.
+  function showSavedToast(message, fields) {
+    const isHidden = filterAndSortTasks([fields], filters).length === 0
+    if (isHidden) {
+      showToast(`${message}, but it is hidden by the current filters`, 'info')
+    } else {
+      showToast(message)
+    }
+  }
+
   function handleFormSave(fields) {
     const editedTask = formDialog.task
 
@@ -104,10 +130,10 @@ function TaskBoard() {
       if (fields.status !== editedTask.status) {
         taskIdToFocusRef.current = editedTask.id
       }
-      showToast('Task updated')
+      showSavedToast('Task updated', fields)
     } else {
       addTask(fields)
-      showToast('Task created')
+      showSavedToast('Task created', fields)
     }
 
     handleFormClose()
@@ -123,6 +149,8 @@ function TaskBoard() {
     setTaskToDelete(null)
   }
 
+  const hasTasks = tasks.length > 0
+
   return (
     <div className="mx-auto max-w-6xl px-4 py-6">
       {storageProblem && (
@@ -136,38 +164,40 @@ function TaskBoard() {
         <Button onClick={handleNewTaskClick}>New task</Button>
       </div>
 
-      <div className="mb-3">
-        <TaskFilters
-          filters={filters}
-          hasActiveFilters={hasActiveFilters}
-          onToggleStatus={toggleStatus}
-          onPriorityChange={setPriority}
-          onSearchChange={setSearchText}
-          onSortFieldChange={setSortField}
-          onSortDirectionChange={setSortDirection}
-          onClear={clearFilters}
-        />
-      </div>
-
-      {/* Polite live region: screen reader users hear how many tasks match after filtering. */}
-      <p aria-live="polite" className="mb-3 text-sm text-slate-600">
-        Showing {visibleTasks.length} of {tasks.length} tasks
-      </p>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        {STATUSES.map(function (status) {
-          return (
-            <TaskColumn
-              key={status}
-              status={status}
-              tasks={tasksByStatus[status]}
-              onMove={handleMove}
-              onEdit={handleEditRequest}
-              onDelete={handleDeleteRequest}
+      {/* Filtering an empty board makes no sense, so these only show when there are tasks. */}
+      {hasTasks && (
+        <>
+          <div className="mb-3">
+            <TaskFilters
+              filters={filters}
+              hasActiveFilters={hasActiveFilters}
+              clearSignal={clearSignal}
+              onToggleStatus={toggleStatus}
+              onPriorityChange={setPriority}
+              onSearchChange={setSearchText}
+              onSortFieldChange={setSortField}
+              onSortDirectionChange={setSortDirection}
+              onClear={handleClearFilters}
             />
-          )
-        })}
-      </div>
+          </div>
+
+          {/* Polite live region: screen reader users hear how many tasks match after filtering. */}
+          <p aria-live="polite" className="mb-3 text-sm text-slate-600">
+            Showing {visibleTasks.length} of {tasks.length} tasks
+          </p>
+        </>
+      )}
+
+      <BoardBody
+        totalCount={tasks.length}
+        visibleCount={visibleTasks.length}
+        tasksByStatus={tasksByStatus}
+        onMove={handleMove}
+        onEdit={handleEditRequest}
+        onDelete={handleDeleteRequest}
+        onCreate={handleNewTaskClick}
+        onClearFilters={handleClearFilters}
+      />
 
       {formDialog.isOpen && <TaskModal task={formDialog.task} onSave={handleFormSave} onClose={handleFormClose} />}
 
