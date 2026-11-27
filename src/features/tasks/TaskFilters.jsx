@@ -1,12 +1,15 @@
 // Props: filters (from useTaskFilters), hasActiveFilters, and the change functions:
-// onToggleStatus, onPriorityChange, onSearchChange, onSortFieldChange,
+// clearSignal, onToggleStatus, onPriorityChange, onSearchChange, onSortFieldChange,
 // onSortDirectionChange, onClear.
 // Purely presentational except for the search box, which keeps its own text so typing is
 // never delayed or reverted, and tells the URL about it after a short pause.
+// clearSignal is a number the board increases whenever it clears the filters; when it changes, any pending search update is cancelled and the search box is emptied.
+
 import { useEffect, useRef, useState } from 'react'
 import { Button, Select, TextInput } from '../../components/ui'
 import { PRIORITIES, SORT_FIELDS, SORT_FIELD_LABELS } from '../../utils/constants'
 import StatusFilter from './StatusFilter'
+import { SEARCH_INPUT_ID } from './taskDomIds'
 
 const SEARCH_DELAY_MS = 300
 
@@ -31,6 +34,7 @@ function getDirectionOptions(sortField) {
 function TaskFilters({
   filters,
   hasActiveFilters,
+  clearSignal,
   onToggleStatus,
   onPriorityChange,
   onSearchChange,
@@ -50,6 +54,23 @@ function TaskFilters({
     setSearchInput(filters.searchText)
   }
 
+  // The board bumps clearSignal when it clears the filters. The URL may not change in that
+  // case (the search text was never in the URL yet), so the box must be emptied here too.
+  const [lastClearSignal, setLastClearSignal] = useState(clearSignal)
+  if (clearSignal !== lastClearSignal) {
+    setLastClearSignal(clearSignal)
+    setSearchInput('')
+  }
+
+  // The same signal throws away a search update that is still waiting on its timer.
+  // Otherwise it would fire after the clear and bring the old search back.
+  useEffect(
+    function cancelPendingSearchOnClear() {
+      clearTimeout(searchTimerRef.current)
+    },
+    [clearSignal],
+  )
+
   // Do not run the pending URL update if the filters are unmounted.
   useEffect(function () {
     return function cancelPendingSearch() {
@@ -68,17 +89,11 @@ function TaskFilters({
     }, SEARCH_DELAY_MS)
   }
 
-  function handleClearClick() {
-    clearTimeout(searchTimerRef.current)
-    setSearchInput('')
-    onClear()
-  }
-
   return (
     <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-4">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <TextInput
-          id="filter-search"
+          id={SEARCH_INPUT_ID}
           type="search"
           label="Search"
           placeholder="Title or description"
@@ -117,7 +132,7 @@ function TaskFilters({
 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <StatusFilter selectedStatuses={filters.statuses} onToggle={onToggleStatus} />
-        <Button variant="secondary" size="sm" onClick={handleClearClick} disabled={!hasActiveFilters}>
+        <Button variant="secondary" size="sm" onClick={onClear} disabled={!hasActiveFilters}>
           Clear filters
         </Button>
       </div>
