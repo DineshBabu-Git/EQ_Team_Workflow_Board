@@ -9,6 +9,11 @@ const FOCUSABLE_SELECTOR =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), ' +
   'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
+// How many modals are open right now. Two can be open at once (the discard confirm sits on
+// top of the form), and the page may only scroll again when the LAST one closes. Counting
+// works whatever order they close in, which saving and restoring a value does not.
+let openModalCount = 0;
+
 function Modal({ isOpen, onClose, title, children }) {
   const dialogRef = useRef(null)
   const titleId = useId()
@@ -26,7 +31,7 @@ function Modal({ isOpen, onClose, title, children }) {
       const openerElement = document.activeElement
 
       // Stop the page behind the modal from scrolling.
-      const previousOverflow = document.body.style.overflow
+      openModalCount += 1
       document.body.style.overflow = 'hidden'
 
       // Focus the first form field if there is one, otherwise the first focusable thing
@@ -41,7 +46,10 @@ function Modal({ isOpen, onClose, title, children }) {
       }
 
       return function cleanup() {
-        document.body.style.overflow = previousOverflow
+        openModalCount -= 1;
+        if (openModalCount === 0) {
+          document.body.style.overflow = ''
+        }
         if (openerElement && openerElement.focus) {
           openerElement.focus()
         }
