@@ -1,6 +1,7 @@
 import { ToastProvider } from './components/ui'
 import TasksProvider from './context/TasksProvider'
 import TaskBoard from './features/tasks/TaskBoard'
+import DevTools from './features/tasks/DevTools'
 
 // ToastProvider must be outside TasksProvider because the tasks provider shows a toast.
 function App() {
@@ -16,6 +17,11 @@ function App() {
           <main>
             <TaskBoard />
           </main>
+          {import.meta.env.DEV && (
+            <footer className="mx-auto max-w-6xl px-4 pb-8">
+              <DevTools />
+            </footer>
+          )}
         </div>
       </TasksProvider>
     </ToastProvider>
