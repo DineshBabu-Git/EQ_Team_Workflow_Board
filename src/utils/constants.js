@@ -28,3 +28,11 @@ export const SORT_FIELDS = ["created", "updated", "priority"];
 export const SORT_DIRECTIONS = ["asc", "desc"];
 export const DEFAULT_SORT_FIELD = "updated";
 export const DEFAULT_SORT_DIRECTION = "desc";
+
+// Badge color for each priority. Kept here so the card and, later, any other
+// place that shows a priority use the same colors.
+export const PRIORITY_COLORS = {
+  Low: "gray",
+  Medium: "blue",
+  High: "red",
+};
