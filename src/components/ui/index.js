@@ -9,3 +9,4 @@ export { default as TextArea } from "./TextArea";
 export { default as TextInput } from "./TextInput";
 export { default as ToastProvider } from "./ToastProvider";
 export { default as useToast } from "./useToast";
+export { default as EmptyState } from './EmptyState'
