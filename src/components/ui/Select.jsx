@@ -1,5 +1,5 @@
 
-// emptyOptionLabel, hideLabel, error, hint, plus normal <select> props.
+// options may be strings, or { value, label } objects when the text shown differs from the value.
 
 import { forwardRef } from 'react'
 import FieldMessage from './FieldMessage'
@@ -27,9 +27,12 @@ const Select = forwardRef(function Select(
       >
         {emptyOptionLabel && <option value="">{emptyOptionLabel}</option>}
         {options.map(function (option) {
+          // A plain string is both the value and the text. An object lets them differ.
+          const value = typeof option === 'string' ? option : option.value
+          const optionLabel = typeof option === 'string' ? option : option.label
           return (
-            <option key={option} value={option}>
-              {option}
+            <option key={value} value={value}>
+              {optionLabel}
             </option>
           )
         })}
