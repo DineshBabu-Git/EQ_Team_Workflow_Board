@@ -36,3 +36,10 @@ export const PRIORITY_COLORS = {
   Medium: "blue",
   High: "red",
 };
+
+// Text shown in the sort dropdown for each sort field.
+export const SORT_FIELD_LABELS = {
+  created: "Created date",
+  updated: "Updated date",
+  priority: "Priority",
+};
