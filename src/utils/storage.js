@@ -6,6 +6,7 @@ export const BACKUP_STORAGE_KEY = `${STORAGE_KEY}-backup`;
 export const STORAGE_ERRORS = {
   UNAVAILABLE: "unavailable", // localStorage blocked (private mode, browser setting, ...)
   UNREADABLE: "unreadable", // data exists but is corrupt or in an unknown format
+  SAVE_FAILED: "save-failed", // reading worked, but a later save failed (e.g. quota full)
 };
 
 // Keeps a copy of the original text so a migration or a failed read can never destroy it.
@@ -52,4 +53,15 @@ export function saveTasks(tasks) {
   } catch {
     return { ok: false };
   }
+}
+
+// Decides which storage problem (if any) to show after a save attempt.
+//   - a successful save clears an old "save failed" message, but never hides
+//     "unreadable" or "unavailable", because saving does not fix those
+//   - a failed save never replaces "unavailable", which is the more serious message
+export function getNextStorageProblem(currentProblem, saveWasOk) {
+  if (saveWasOk) {
+    return currentProblem === STORAGE_ERRORS.SAVE_FAILED ? null : currentProblem
+  }
+  return currentProblem === STORAGE_ERRORS.UNAVAILABLE ? currentProblem : STORAGE_ERRORS.SAVE_FAILED
 }

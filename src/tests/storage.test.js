@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { STORAGE_KEY } from "../utils/constants";
-import { BACKUP_STORAGE_KEY, STORAGE_ERRORS, loadTasks, saveTasks } from "../utils/storage";
+import { BACKUP_STORAGE_KEY, STORAGE_ERRORS, getNextStorageProblem, loadTasks, saveTasks } from "../utils/storage";
 
 beforeEach(function () {
   localStorage.clear();
@@ -65,5 +65,25 @@ describe("loadTasks and saveTasks", function () {
       throw new Error("quota exceeded");
     });
     expect(saveTasks([])).toEqual({ ok: false });
+  });
+});
+
+describe("getNextStorageProblem", function () {
+  it("clears an old save-failed message after a successful save", function () {
+    expect(getNextStorageProblem(STORAGE_ERRORS.SAVE_FAILED, true)).toBeNull();
+  });
+
+  it("does not hide unreadable or unavailable after a successful save", function () {
+    expect(getNextStorageProblem(STORAGE_ERRORS.UNREADABLE, true)).toBe(STORAGE_ERRORS.UNREADABLE);
+    expect(getNextStorageProblem(STORAGE_ERRORS.UNAVAILABLE, true)).toBe(STORAGE_ERRORS.UNAVAILABLE);
+  });
+
+  it("reports save-failed after a failed save", function () {
+    expect(getNextStorageProblem(null, false)).toBe(STORAGE_ERRORS.SAVE_FAILED);
+    expect(getNextStorageProblem(STORAGE_ERRORS.UNREADABLE, false)).toBe(STORAGE_ERRORS.SAVE_FAILED);
+  });
+
+  it("never replaces unavailable with save-failed", function () {
+    expect(getNextStorageProblem(STORAGE_ERRORS.UNAVAILABLE, false)).toBe(STORAGE_ERRORS.UNAVAILABLE);
   });
 });
