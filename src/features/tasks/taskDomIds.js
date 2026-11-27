@@ -7,3 +7,6 @@ export function getStatusSelectId(taskId) {
 
 // The form element, so TaskModal can find the first invalid field inside it after a failed submit.
 export const TASK_FORM_ID = "task-form";
+
+// The search box, so the board can move focus there after filters are cleared.
+export const SEARCH_INPUT_ID = "filter-search";
